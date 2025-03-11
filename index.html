@@ -7,7 +7,12 @@
         body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
         button { padding: 10px 20px; margin: 5px; }
         .status { margin-top: 10px; color: blue; }
-        #captcha-container { margin: 10px; }
+        #captcha-container { 
+            margin: 10px auto; /* Центрируем по горизонтали с помощью auto */
+            display: flex; /* Используем flex для центрирования содержимого */
+            justify-content: center; /* Центрируем содержимое по горизонтали */
+            max-width: 304px; /* Ограничиваем ширину капчи (ширина reCAPTCHA) */
+        }
         #balance { margin-top: 10px; font-weight: bold; }
     </style>
     <!-- Подключаем reCAPTCHA -->
@@ -24,28 +29,25 @@
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <script>
-        const contractAddress = "0x4E1830a4A9b3F915F26e133AA141B065c8b3Bf41"; // Замените на адрес контракта
+        const contractAddress = "0x4E1830a4A9b3F915F26e133AA141B065c8b3Bf41";
         let web3;
         let contract;
         let accounts;
         let captchaVerified = false;
         let userIP;
 
-        // Загружаем ABI из файла
         async function loadABI() {
             const response = await fetch('./abi.json');
             if (!response.ok) throw new Error("Failed to load ABI");
             return await response.json();
         }
 
-        // Получаем IP-адрес клиента
         async function getIP() {
             const response = await fetch('https://api.ipify.org?format=json');
             const data = await response.json();
             return data.ip;
         }
 
-        // Обновляем баланс контракта
         async function updateBalance() {
             if (!web3) return;
             try {
@@ -62,7 +64,7 @@
                 web3 = new Web3(window.ethereum);
                 try {
                     accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const abi = await loadABI(); // Загружаем ABI
+                    const abi = await loadABI();
                     contract = new web3.eth.Contract(abi, contractAddress);
                     const networkId = await web3.eth.net.getId();
                     if (networkId !== 11155111) {
@@ -73,7 +75,7 @@
                     updateStatus("Wallet connected: " + accounts[0] + " | IP: " + userIP);
                     document.getElementById("connectWallet").disabled = true;
                     document.getElementById("dripBtn").disabled = !captchaVerified;
-                    updateBalance(); // Показываем баланс после подключения
+                    updateBalance();
                 } catch (error) {
                     updateStatus("Connection failed: " + error.message);
                 }
@@ -82,7 +84,6 @@
             }
         }
 
-        // Callback для капчи
         window.onCaptchaSuccess = function(token) {
             captchaVerified = true;
             document.getElementById("dripBtn").disabled = !accounts;
@@ -125,7 +126,7 @@
                 captchaVerified = false;
                 document.getElementById("dripBtn").disabled = true;
                 grecaptcha.reset();
-                updateBalance(); // Обновляем баланс после раздачи
+                updateBalance();
             } catch (error) {
                 console.error("Drip error:", error);
                 updateStatus("Error: " + (error.message || "Transaction failed"));
