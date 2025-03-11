@@ -1,3 +1,5 @@
+![Sepolia Faucet](faucet.jpg)
+
 # Sepolia Testnet Faucet
 
 ![Sepolia Faucet](https://img.shields.io/badge/Network-Sepolia-blue) ![ETH](https://img.shields.io/badge/ETH-0.01-green) ![License](https://img.shields.io/badge/License-MIT-yellow)
