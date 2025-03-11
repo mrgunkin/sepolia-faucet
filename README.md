@@ -1,6 +1,6 @@
 ![Sepolia Faucet](faucet.jpg)
 
-# 🌍 Sepolia Testnet Faucet | Sepolia Тестовая Сеть Кран
+# 🌍 Sepolia Testnet Faucet | Кран Sepolia testnet 
 
 [English](#english) | [Русский](#русский)
 
@@ -32,7 +32,7 @@ This project is hosted on GitHub Pages and serves as a static interface for inte
 ### Installation & Setup (For Developers)
 1. **Clone the repository**:
    ```sh
-   git clone https://github.com/your-username/sepolia-faucet.git
+   git clone https://github.com/mrgunkin/sepolia-faucet.git
    cd sepolia-faucet
    ```
 2. **Update the Contract**:
@@ -53,8 +53,8 @@ This project is hosted on GitHub Pages and serves as a static interface for inte
 - Installed MetaMask connected to Sepolia.
 - Small amount of test ETH for gas fees (get from other faucets if needed).
 
-### License
-This code is provided "as is" without any warranties. The author is not responsible for any losses or issues arising from using this software. You are free to use, modify, and distribute this code at your own risk.
+### License  
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ### Acknowledgments
 - **Google reCAPTCHA** for bot protection.
@@ -93,7 +93,7 @@ Sepolia Testnet Faucet — это простой кран для раздачи 
 ### Установка и настройка (для разработчиков)
 1. **Клонируйте репозиторий**:
    ```sh
-   git clone https://github.com/ваш-username/sepolia-faucet.git
+   git clone https://github.com/mrgunkin/sepolia-faucet.git
    cd sepolia-faucet
    ```
 2. **Обновите контракт**:
@@ -114,8 +114,8 @@ Sepolia Testnet Faucet — это простой кран для раздачи 
 - Установленный MetaMask с подключением к Sepolia.
 - Небольшое количество тестовых ETH для оплаты комиссии за газ.
 
-### Лицензия
-Код предоставляется "как есть" без каких-либо гарантий. Автор не несёт ответственности за возможные убытки или проблемы при использовании. Использование, модификация и распространение кода на ваш страх и риск.
+### Лицензия  
+Этот проект распространяется по лицензии MIT — подробности см. в файле [LICENSE](./LICENSE).
 
 ### Благодарности
 - **Google reCAPTCHA** за защиту от ботов.
