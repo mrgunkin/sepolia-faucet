@@ -139,7 +139,7 @@
         <h1>Sepolia Faucet</h1>
         <p>Get 0.01 ETH every 24 hours</p>
         <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
-        <div id="captcha-container" class="g-recaptcha" data-sitekey="6LfRHfEqAAAAAE4UztmHQbuFRU5zoWBuMEpTXK-r" data-callback="onCaptchaSuccess"></div>
+        <div id="captcha-container" class="g-recaptcha" data-sitekey="6LfRHfEqAAAAAE4UztmHQbuFRU5zoWBuMEpTXK-r" data-callback="onCaptchaSuccess" data-theme="dark"></div>
         <button id="dripBtn" onclick="requestDrip()" disabled>Request 0.01 ETH</button>
         <div id="balance">Faucet Balance: Loading...</div>
         <div id="status" class="status"></div>
@@ -193,8 +193,9 @@
                         updateStatus("Please switch to Sepolia Testnet!");
                         return;
                     }
-                    userIP = await getIP();
-                    updateStatus("Wallet connected: " + accounts[0] + " | IP: " + userIP);
+                    userIP = await getIP(); // Оставляем для IP-хэша, но не выводим
+                    updateStatus("Wallet connected: " + accounts[0]); // Убрали IP
+                    document.getElementById("connectWallet").innerText = "Connected"; // Меняем текст кнопки
                     document.getElementById("connectWallet").disabled = true;
                     document.getElementById("dripBtn").disabled = !captchaVerified;
                     updateBalance();
@@ -217,7 +218,7 @@
                 updateStatus("Please verify the captcha first!");
                 return;
             }
-            if (!userIP) {
+            if (!userIP) { // Оставляем проверку для логики, но не выводим
                 updateStatus("IP not detected yet, please reconnect wallet!");
                 return;
             }
