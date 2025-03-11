@@ -2,55 +2,151 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sepolia Faucet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
-        button { padding: 10px 20px; margin: 5px; }
-        .status { margin-top: 10px; color: blue; }
-        #captcha-container { 
-            margin: 10px auto; /* Центрируем по горизонтали с помощью auto */
-            display: flex; /* Используем flex для центрирования содержимого */
-            justify-content: center; /* Центрируем содержимое по горизонтали */
-            max-width: 304px; /* Ограничиваем ширину капчи (ширина reCAPTCHA) */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
         }
-        #balance { margin-top: 10px; font-weight: bold; }
-        #support { 
-    margin-top: 20px; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    gap: 10px; /* Отступ между текстом и кнопкой */
-}
-#support span { 
-    font-size: 14px; 
-    color: #555; 
-}
-#support button { 
-    padding: 8px 16px; 
-    background-color: #f8f9fa; 
-    border: 1px solid #ccc; 
-    border-radius: 4px; 
-    cursor: pointer; 
-}
-#support button:hover { 
-    background-color: #e9ecef; 
-}
+
+        /* Фон с гексагонами */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><polygon points="20,10 30,15 30,25 20,30 10,25 10,15" fill="none" stroke="%236b48ff" stroke-width="1" opacity="0.1"/></svg>') repeat;
+            z-index: 0;
+            opacity: 0.2;
+        }
+
+        .container {
+            background: rgba(34, 34, 54, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(107, 72, 255, 0.3);
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: #00ddeb;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #b0b0b0;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(90deg, #6b48ff, #00ddeb);
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(107, 72, 255, 0.5);
+        }
+
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #captcha-container {
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+            max-width: 304px;
+        }
+
+        #balance {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #00ddeb;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #6b48ff;
+        }
+
+        #support {
+            margin-top: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-size: 14px;
+            color: #b0b0b0;
+        }
+
+        #support button {
+            background: #333;
+            padding: 8px 20px;
+            border-radius: 20px;
+        }
+
+        #support button:hover {
+            background: #444;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            h1 { font-size: 24px; }
+            p { font-size: 14px; }
+            button { padding: 10px 20px; }
+            #support { flex-direction: column; gap: 10px; }
+        }
     </style>
-    <!-- Подключаем reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body>
-    <h1>Sepolia Testnet Faucet</h1>
-    <p>Get 0.01 ETH every 24 hours</p>
-    <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
-    <div id="captcha-container" class="g-recaptcha" data-sitekey="6LfRHfEqAAAAAE4UztmHQbuFRU5zoWBuMEpTXK-r" data-callback="onCaptchaSuccess"></div>
-    <button id="dripBtn" onclick="requestDrip()" disabled>Request 0.01 ETH</button>
-    <div id="balance">Faucet Balance: Loading...</div>
-    <div id="status" class="status"></div>
-
-    <div id="support">
-        <span>Если вам понравился этот кран, пожалуйста, поставьте звёздочку на GitHub! Это поможет другим разработчикам найти проект и мотивирует меня продолжать его развитие. Спасибо!</span>
-        <a href="https://github.com/mrgunkin/sepolia-faucet" target="_blank"><button>⭐ Star on GitHub</button></a>
+    <div class="container">
+        <h1>Sepolia Faucet</h1>
+        <p>Get 0.01 ETH every 24 hours</p>
+        <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
+        <div id="captcha-container" class="g-recaptcha" data-sitekey="6LfRHfEqAAAAAE4UztmHQbuFRU5zoWBuMEpTXK-r" data-callback="onCaptchaSuccess"></div>
+        <button id="dripBtn" onclick="requestDrip()" disabled>Request 0.01 ETH</button>
+        <div id="balance">Faucet Balance: Loading...</div>
+        <div id="status" class="status"></div>
+        <div id="support">
+            <span>Если вам понравился этот кран, пожалуйста, поставьте звёздочку на GitHub! Это поможет другим разработчикам найти проект и мотивирует меня продолжать его развитие. Спасибо!</span>
+            <a href="https://github.com/mrgunkin/sepolia-faucet" target="_blank"><button>⭐ Star on GitHub</button></a>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
