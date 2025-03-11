@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sepolia Faucet</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+        button { padding: 10px 20px; margin: 5px; }
+        .status { margin-top: 10px; color: blue; }
+        #captcha-container { margin: 10px; }
+        #balance { margin-top: 10px; font-weight: bold; }
+    </style>
+    <!-- Подключаем reCAPTCHA -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+</head>
+<body>
+    <h1>Sepolia Testnet Faucet</h1>
+    <p>Get 0.01 ETH every 24 hours</p>
+    <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
+    <div id="captcha-container" class="g-recaptcha" data-sitekey="6LfRHfEqAAAAAE4UztmHQbuFRU5zoWBuMEpTXK-r" data-callback="onCaptchaSuccess"></div>
+    <button id="dripBtn" onclick="requestDrip()" disabled>Request 0.01 ETH</button>
+    <div id="balance">Faucet Balance: Loading...</div>
+    <div id="status" class="status"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+    <script>
+        const contractAddress = "0x4E1830a4A9b3F915F26e133AA141B065c8b3Bf41"; // Замените на адрес контракта
+        let web3;
+        let contract;
+        let accounts;
+        let captchaVerified = false;
+        let userIP;
+
+        // Загружаем ABI из файла
+        async function loadABI() {
+            const response = await fetch('./abi.json');
+            if (!response.ok) throw new Error("Failed to load ABI");
+            return await response.json();
+        }
+
+        // Получаем IP-адрес клиента
+        async function getIP() {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        }
+
+        // Обновляем баланс контракта
+        async function updateBalance() {
+            if (!web3) return;
+            try {
+                const balance = await web3.eth.getBalance(contractAddress);
+                document.getElementById("balance").textContent = `Faucet Balance: ${web3.utils.fromWei(balance, "ether")} ETH`;
+            } catch (error) {
+                console.error("Balance error:", error);
+                document.getElementById("balance").textContent = "Faucet Balance: Error";
+            }
+        }
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                try {
+                    accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const abi = await loadABI(); // Загружаем ABI
+                    contract = new web3.eth.Contract(abi, contractAddress);
+                    const networkId = await web3.eth.net.getId();
+                    if (networkId !== 11155111) {
+                        updateStatus("Please switch to Sepolia Testnet!");
+                        return;
+                    }
+                    userIP = await getIP();
+                    updateStatus("Wallet connected: " + accounts[0] + " | IP: " + userIP);
+                    document.getElementById("connectWallet").disabled = true;
+                    document.getElementById("dripBtn").disabled = !captchaVerified;
+                    updateBalance(); // Показываем баланс после подключения
+                } catch (error) {
+                    updateStatus("Connection failed: " + error.message);
+                }
+            } else {
+                updateStatus("Please install MetaMask!");
+            }
+        }
+
+        // Callback для капчи
+        window.onCaptchaSuccess = function(token) {
+            captchaVerified = true;
+            document.getElementById("dripBtn").disabled = !accounts;
+            updateStatus("Captcha verified! You can now request ETH.");
+        };
+
+        async function requestDrip() {
+            if (!captchaVerified) {
+                updateStatus("Please verify the captcha first!");
+                return;
+            }
+            if (!userIP) {
+                updateStatus("IP not detected yet, please reconnect wallet!");
+                return;
+            }
+
+            try {
+                const ipHash = web3.utils.sha3(userIP);
+                const lastDripAddress = await contract.methods.lastDripTime(accounts[0]).call();
+                const lastDripIP = await contract.methods.lastDripTimeByIP(ipHash).call();
+                const now = Math.floor(Date.now() / 1000);
+                const timeLeftAddress = parseInt(lastDripAddress) + 24 * 60 * 60 - now;
+                const timeLeftIP = parseInt(lastDripIP) + 24 * 60 * 60 - now;
+
+                if (timeLeftAddress > 0) {
+                    const hoursLeft = Math.floor(timeLeftAddress / 3600);
+                    const minutesLeft = Math.floor((timeLeftAddress % 3600) / 60);
+                    updateStatus(`Address: Wait ${hoursLeft}h ${minutesLeft}m before next drip!`);
+                    return;
+                }
+                if (timeLeftIP > 0) {
+                    const hoursLeft = Math.floor(timeLeftIP / 3600);
+                    const minutesLeft = Math.floor((timeLeftIP % 3600) / 60);
+                    updateStatus(`IP: Wait ${hoursLeft}h ${minutesLeft}m before next drip!`);
+                    return;
+                }
+
+                await contract.methods.drip(ipHash).send({ from: accounts[0] });
+                updateStatus("0.01 ETH sent to your wallet!");
+                captchaVerified = false;
+                document.getElementById("dripBtn").disabled = true;
+                grecaptcha.reset();
+                updateBalance(); // Обновляем баланс после раздачи
+            } catch (error) {
+                console.error("Drip error:", error);
+                updateStatus("Error: " + (error.message || "Transaction failed"));
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById("status").textContent = message;
+        }
+    </script>
+</body>
+</html>
