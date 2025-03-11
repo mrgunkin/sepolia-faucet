@@ -54,7 +54,7 @@ This project is hosted on GitHub Pages and serves as a static interface for inte
 - Small amount of test ETH for gas fees (get from other faucets if needed).
 
 ### License  
-This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE.md) file for details.
 
 ### Acknowledgments
 - **Google reCAPTCHA** for bot protection.
@@ -115,7 +115,7 @@ Sepolia Testnet Faucet — это простой кран для раздачи 
 - Небольшое количество тестовых ETH для оплаты комиссии за газ.
 
 ### Лицензия  
-Этот проект распространяется по лицензии MIT — подробности см. в файле [LICENSE](./LICENSE).
+Этот проект распространяется по лицензии MIT — подробности см. в файле [LICENSE](./LICENSE.md).
 
 ### Благодарности
 - **Google reCAPTCHA** за защиту от ботов.
