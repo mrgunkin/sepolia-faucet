@@ -60,7 +60,7 @@
         }
 
         button {
-            background: linear-gradient(90deg, #6b48ff, #00ddeb);
+            background: linear-gradient(90deg, #6b48ff, #00ddeb); /* Общий стиль для всех кнопок */
             border: none;
             padding: 12px 25px;
             border-radius: 25px;
@@ -68,6 +68,9 @@
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            margin-left: auto;
+            margin-right: auto;
+            display: block; /* Центрирование кнопок */
         }
 
         button:hover {
@@ -136,24 +139,7 @@
             display: none;
         }
 
-        /* Стиль для кнопки переключения сети */
-        #switchNetworkBtn {
-            display: none;
-            background: linear-gradient(90deg, #ff4444, #ff7777);
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
-        }
-
-        #switchNetworkBtn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(255, 77, 77, 0.5);
-        }
+        /* Убираем отдельный стиль для #switchNetworkBtn, теперь он использует общий стиль button */
 
         @media (max-width: 480px) {
             .container {
@@ -368,7 +354,6 @@
             document.getElementById("status").innerHTML = message;
         }
 
-        // Обновление проверки сети при изменении сети MetaMask
         window.ethereum?.on('chainChanged', (chainId) => {
             checkNetwork();
             if (web3) {
