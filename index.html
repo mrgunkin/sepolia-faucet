@@ -20,6 +20,11 @@
             text-align: center;
             position: relative;
             overflow: hidden;
+            transition: opacity 0.5s;
+        }
+
+        body.loading {
+            opacity: 0;
         }
 
         body::before {
@@ -43,6 +48,30 @@
             width: 100%;
             position: relative;
             z-index: 1;
+            display: none; /* Скрываем контейнер до загрузки */
+        }
+
+        .container.loaded {
+            display: block; /* Показываем после загрузки */
+        }
+
+        .loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #6b48ff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            z-index: 1000;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
         h1 {
@@ -60,7 +89,7 @@
         }
 
         button {
-            background: linear-gradient(90deg, #6b48ff, #00ddeb); /* Общий стиль для всех кнопок */
+            background: linear-gradient(90deg, #6b48ff, #00ddeb);
             border: none;
             padding: 12px 25px;
             border-radius: 25px;
@@ -70,7 +99,7 @@
             transition: transform 0.2s, box-shadow 0.2s;
             margin-left: auto;
             margin-right: auto;
-            display: block; /* Центрирование кнопок */
+            display: block;
         }
 
         button:hover {
@@ -134,12 +163,9 @@
             box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
         }
 
-        /* Стиль для скрытия кнопки Connect Wallet */
         #connectWallet.hidden {
             display: none;
         }
-
-        /* Убираем отдельный стиль для #switchNetworkBtn, теперь он использует общий стиль button */
 
         @media (max-width: 480px) {
             .container {
@@ -153,8 +179,9 @@
     </style>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
-<body onload="checkNetwork()">
-    <div class="container">
+<body class="loading">
+    <div class="loader"></div>
+    <div class="container" id="content">
         <h1>Sepolia Faucet</h1>
         <p>Get 0.01 ETH every 24 hours</p>
         <button id="connectWallet" onclick="connectWallet()">Connect Wallet</button>
@@ -177,6 +204,7 @@
         let accounts;
         let captchaVerified = false;
         let userIP;
+        let isConnected = false;
 
         async function loadABI() {
             const response = await fetch('./abi.json');
@@ -287,15 +315,28 @@
                     }
                 }
 
-                accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                const abi = await loadABI();
-                contract = new web3.eth.Contract(abi, contractAddress);
-                userIP = await getIP();
-                updateStatus("Wallet connected: " + accounts[0]);
-                document.getElementById("connectWallet").innerText = "Connected";
-                document.getElementById("connectWallet").disabled = true;
-                document.getElementById("dripBtn").disabled = !captchaVerified;
-                updateBalance();
+                if (!isConnected) {
+                    // Подключение кошелька
+                    accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    const abi = await loadABI();
+                    contract = new web3.eth.Contract(abi, contractAddress);
+                    userIP = await getIP();
+                    updateStatus("Wallet connected: " + accounts[0]);
+                    document.getElementById("connectWallet").innerText = "Connected";
+                    isConnected = true;
+                    document.getElementById("dripBtn").disabled = !captchaVerified;
+                    updateBalance();
+                } else {
+                    // Отключение кошелька
+                    accounts = null;
+                    contract = null;
+                    userIP = null;
+                    isConnected = false;
+                    updateStatus("Wallet disconnected");
+                    document.getElementById("connectWallet").innerText = "Connect Wallet";
+                    document.getElementById("dripBtn").disabled = true;
+                    document.getElementById("balance").textContent = "Faucet Balance: Loading...";
+                }
             } catch (error) {
                 updateStatus("Connection failed: " + error.message);
             }
@@ -353,6 +394,15 @@
         function updateStatus(message) {
             document.getElementById("status").innerHTML = message;
         }
+
+        // Инициализация при загрузке
+        document.addEventListener("DOMContentLoaded", async () => {
+            await checkNetwork();
+            const content = document.getElementById("content");
+            content.classList.add("loaded");
+            document.body.classList.remove("loading");
+            document.querySelector(".loader").style.display = "none";
+        });
 
         window.ethereum?.on('chainChanged', (chainId) => {
             checkNetwork();
