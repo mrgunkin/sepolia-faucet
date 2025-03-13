@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sepolia Faucet</title>
+    <!-- Добавляем favicon -->
+    <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/mrgunkin/sepolia-faucet/main/icon.png" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@400&display=swap" rel="stylesheet">
     <style>
         body {
@@ -21,7 +23,6 @@
             overflow: hidden;
         }
 
-        /* Фон с гексагонами */
         body::before {
             content: '';
             position: absolute;
@@ -101,6 +102,15 @@
             color: #6b48ff;
         }
 
+        .status a {
+            color: #00ddeb;
+            text-decoration: none;
+        }
+
+        .status a:hover {
+            text-decoration: underline;
+        }
+
         #support {
             margin-top: 25px;
             display: flex;
@@ -170,6 +180,42 @@
             return data.ip;
         }
 
+        async function switchToSepolia() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0xaa36a7' }], // Chain ID Sepolia в hex (11155111)
+                });
+                return true;
+            } catch (switchError) {
+                if (switchError.code === 4902) {
+                    // Сеть не добавлена в MetaMask, добавляем её
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0xaa36a7',
+                                chainName: 'Sepolia Testnet',
+                                nativeCurrency: {
+                                    name: 'Sepolia ETH',
+                                    symbol: 'ETH',
+                                    decimals: 18
+                                },
+                                rpcUrls: ['https://rpc.sepolia.org'],
+                                blockExplorerUrls: ['https://sepolia.etherscan.io']
+                            }],
+                        });
+                        return true;
+                    } catch (addError) {
+                        updateStatus("Failed to add Sepolia network: " + addError.message);
+                        return false;
+                    }
+                }
+                updateStatus("Failed to switch to Sepolia: " + switchError.message);
+                return false;
+            }
+        }
+
         async function updateBalance() {
             if (!web3) return;
             try {
@@ -186,16 +232,18 @@
                 web3 = new Web3(window.ethereum);
                 try {
                     accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const abi = await loadABI();
-                    contract = new web3.eth.Contract(abi, contractAddress);
                     const networkId = await web3.eth.net.getId();
                     if (networkId !== 11155111) {
-                        updateStatus("Please switch to Sepolia Testnet!");
-                        return;
+                        updateStatus("Switching to Sepolia Testnet...");
+                        const switched = await switchToSepolia();
+                        if (!switched) return;
+                        // После успешного переключения продолжаем
                     }
-                    userIP = await getIP(); // Оставляем для IP-хэша, но не выводим
-                    updateStatus("Wallet connected: " + accounts[0]); // Убрали IP
-                    document.getElementById("connectWallet").innerText = "Connected"; // Меняем текст кнопки
+                    const abi = await loadABI();
+                    contract = new web3.eth.Contract(abi, contractAddress);
+                    userIP = await getIP();
+                    updateStatus("Wallet connected: " + accounts[0]);
+                    document.getElementById("connectWallet").innerText = "Connected";
                     document.getElementById("connectWallet").disabled = true;
                     document.getElementById("dripBtn").disabled = !captchaVerified;
                     updateBalance();
@@ -218,7 +266,7 @@
                 updateStatus("Please verify the captcha first!");
                 return;
             }
-            if (!userIP) { // Оставляем проверку для логики, но не выводим
+            if (!userIP) {
                 updateStatus("IP not detected yet, please reconnect wallet!");
                 return;
             }
@@ -244,8 +292,8 @@
                     return;
                 }
 
-                await contract.methods.drip(ipHash).send({ from: accounts[0] });
-                updateStatus("0.01 ETH sent to your wallet!");
+                const tx = await contract.methods.drip(ipHash).send({ from: accounts[0] });
+                updateStatus(`0.01 ETH sent to your wallet! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.transactionHash}" target="_blank">${tx.transactionHash.slice(0, 10)}...</a>`);
                 captchaVerified = false;
                 document.getElementById("dripBtn").disabled = true;
                 grecaptcha.reset();
@@ -257,7 +305,7 @@
         }
 
         function updateStatus(message) {
-            document.getElementById("status").textContent = message;
+            document.getElementById("status").innerHTML = message; // Используем innerHTML для поддержки ссылок
         }
     </script>
 </body>
