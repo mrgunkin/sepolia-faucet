@@ -161,152 +161,163 @@
 
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <script>
-        const contractAddress = "0x4E1830a4A9b3F915F26e133AA141B065c8b3Bf41";
-        let web3;
-        let contract;
-        let accounts;
-        let captchaVerified = false;
-        let userIP;
+    const contractAddress = "0x4E1830a4A9b3F915F26e133AA141B065c8b3Bf41";
+    let web3;
+    let contract;
+    let accounts;
+    let captchaVerified = false;
+    let userIP;
 
-        async function loadABI() {
-            const response = await fetch('./abi.json');
-            if (!response.ok) throw new Error("Failed to load ABI");
-            return await response.json();
-        }
+    async function loadABI() {
+        const response = await fetch('./abi.json');
+        if (!response.ok) throw new Error("Failed to load ABI");
+        return await response.json();
+    }
 
-        async function getIP() {
-            const response = await fetch('https://api.ipify.org?format=json');
-            const data = await response.json();
-            return data.ip;
-        }
+    async function getIP() {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    }
 
-        async function switchToSepolia() {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: '0xaa36a7' }], // Chain ID Sepolia в hex (11155111)
-                });
-                return true;
-            } catch (switchError) {
-                if (switchError.code === 4902) {
-                    // Сеть не добавлена в MetaMask, добавляем её
-                    try {
-                        await window.ethereum.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: '0xaa36a7',
-                                chainName: 'Sepolia Testnet',
-                                nativeCurrency: {
-                                    name: 'Sepolia ETH',
-                                    symbol: 'ETH',
-                                    decimals: 18
-                                },
-                                rpcUrls: ['https://rpc.sepolia.org'],
-                                blockExplorerUrls: ['https://sepolia.etherscan.io']
-                            }],
-                        });
-                        return true;
-                    } catch (addError) {
-                        updateStatus("Failed to add Sepolia network: " + addError.message);
-                        return false;
-                    }
-                }
-                updateStatus("Failed to switch to Sepolia: " + switchError.message);
-                return false;
-            }
-        }
-
-        async function updateBalance() {
-            if (!web3) return;
-            try {
-                const balance = await web3.eth.getBalance(contractAddress);
-                document.getElementById("balance").textContent = `Faucet Balance: ${web3.utils.fromWei(balance, "ether")} ETH`;
-            } catch (error) {
-                console.error("Balance error:", error);
-                document.getElementById("balance").textContent = "Faucet Balance: Error";
-            }
-        }
-
-        async function connectWallet() {
-            if (window.ethereum) {
-                web3 = new Web3(window.ethereum);
+    async function switchToSepolia() {
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0xaa36a7' }], // Chain ID Sepolia в hex (11155111)
+            });
+            return true;
+        } catch (switchError) {
+            if (switchError.code === 4902) {
                 try {
-                    accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    const networkId = await web3.eth.net.getId();
-                    if (networkId !== 11155111) {
-                        updateStatus("Switching to Sepolia Testnet...");
-                        const switched = await switchToSepolia();
-                        if (!switched) return;
-                        // После успешного переключения продолжаем
-                    }
-                    const abi = await loadABI();
-                    contract = new web3.eth.Contract(abi, contractAddress);
-                    userIP = await getIP();
-                    updateStatus("Wallet connected: " + accounts[0]);
-                    document.getElementById("connectWallet").innerText = "Connected";
-                    document.getElementById("connectWallet").disabled = true;
-                    document.getElementById("dripBtn").disabled = !captchaVerified;
-                    updateBalance();
-                } catch (error) {
-                    updateStatus("Connection failed: " + error.message);
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0xaa36a7',
+                            chainName: 'Sepolia Testnet',
+                            nativeCurrency: {
+                                name: 'Sepolia ETH',
+                                symbol: 'ETH',
+                                decimals: 18
+                            },
+                            rpcUrls: ['https://rpc.sepolia.org'],
+                            blockExplorerUrls: ['https://sepolia.etherscan.io']
+                        }],
+                    });
+                    return true;
+                } catch (addError) {
+                    updateStatus("Failed to add Sepolia network: " + addError.message);
+                    return false;
                 }
-            } else {
-                updateStatus("Please install MetaMask!");
             }
+            updateStatus("Failed to switch to Sepolia: " + switchError.message);
+            return false;
+        }
+    }
+
+    async function updateBalance() {
+        if (!web3) return;
+        try {
+            const balance = await web3.eth.getBalance(contractAddress);
+            document.getElementById("balance").textContent = `Faucet Balance: ${web3.utils.fromWei(balance, "ether")} ETH`;
+        } catch (error) {
+            console.error("Balance error:", error);
+            document.getElementById("balance").textContent = "Faucet Balance: Error";
+        }
+    }
+
+    async function connectWallet() {
+        if (!window.ethereum) {
+            updateStatus("Please install MetaMask!");
+            return;
         }
 
-        window.onCaptchaSuccess = function(token) {
-            captchaVerified = true;
-            document.getElementById("dripBtn").disabled = !accounts;
-            updateStatus("Captcha verified! You can now request ETH.");
-        };
+        // Инициализируем web3
+        web3 = new Web3(window.ethereum);
 
-        async function requestDrip() {
-            if (!captchaVerified) {
-                updateStatus("Please verify the captcha first!");
-                return;
-            }
-            if (!userIP) {
-                updateStatus("IP not detected yet, please reconnect wallet!");
-                return;
-            }
+        try {
+            // Сначала проверяем сеть
+            const networkId = await web3.eth.net.getId();
+            if (networkId !== 11155111) {
+                updateStatus("Switching to Sepolia Testnet...");
+                const switched = await switchToSepolia();
+                if (!switched) return;
 
-            try {
-                const ipHash = web3.utils.sha3(userIP);
-                const lastDripAddress = await contract.methods.lastDripTime(accounts[0]).call();
-                const lastDripIP = await contract.methods.lastDripTimeByIP(ipHash).call();
-                const now = Math.floor(Date.now() / 1000);
-                const timeLeftAddress = parseInt(lastDripAddress) + 24 * 60 * 60 - now;
-                const timeLeftIP = parseInt(lastDripIP) + 24 * 60 * 60 - now;
-
-                if (timeLeftAddress > 0) {
-                    const hoursLeft = Math.floor(timeLeftAddress / 3600);
-                    const minutesLeft = Math.floor((timeLeftAddress % 3600) / 60);
-                    updateStatus(`Address: Wait ${hoursLeft}h ${minutesLeft}m before next drip!`);
+                // Проверяем сеть снова после переключения
+                const newNetworkId = await web3.eth.net.getId();
+                if (newNetworkId !== 11155111) {
+                    updateStatus("Please use Sepolia Testnet to proceed!");
                     return;
                 }
-                if (timeLeftIP > 0) {
-                    const hoursLeft = Math.floor(timeLeftIP / 3600);
-                    const minutesLeft = Math.floor((timeLeftIP % 3600) / 60);
-                    updateStatus(`IP: Wait ${hoursLeft}h ${minutesLeft}m before next drip!`);
-                    return;
-                }
-
-                const tx = await contract.methods.drip(ipHash).send({ from: accounts[0] });
-                updateStatus(`0.01 ETH sent to your wallet! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.transactionHash}" target="_blank">${tx.transactionHash.slice(0, 10)}...</a>`);
-                captchaVerified = false;
-                document.getElementById("dripBtn").disabled = true;
-                grecaptcha.reset();
-                updateBalance();
-            } catch (error) {
-                console.error("Drip error:", error);
-                updateStatus("Error: " + (error.message || "Transaction failed"));
             }
+
+            // Если сеть правильная, запрашиваем подключение кошелька
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const abi = await loadABI();
+            contract = new web3.eth.Contract(abi, contractAddress);
+            userIP = await getIP();
+            updateStatus("Wallet connected: " + accounts[0]);
+            document.getElementById("connectWallet").innerText = "Connected";
+            document.getElementById("connectWallet").disabled = true;
+            document.getElementById("dripBtn").disabled = !captchaVerified;
+            updateBalance();
+        } catch (error) {
+            updateStatus("Connection failed: " + error.message);
+        }
+    }
+
+    window.onCaptchaSuccess = function(token) {
+        captchaVerified = true;
+        document.getElementById("dripBtn").disabled = !accounts;
+        updateStatus("Captcha verified! You can now request ETH.");
+    };
+
+    async function requestDrip() {
+        if (!captchaVerified) {
+            updateStatus("Please verify the captcha first!");
+            return;
+        }
+        if (!userIP) {
+            updateStatus("IP not detected yet, please reconnect wallet!");
+            return;
         }
 
-        function updateStatus(message) {
-            document.getElementById("status").innerHTML = message; // Используем innerHTML для поддержки ссылок
+        try {
+            const ipHash = web3.utils.sha3(userIP);
+            const lastDripAddress = await contract.methods.lastDripTime(accounts[0]).call();
+            const lastDripIP = await contract.methods.lastDripTimeByIP(ipHash).call();
+            const now = Math.floor(Date.now() / 1000);
+            const timeLeftAddress = parseInt(lastDripAddress) + 24 * 60 * 60 - now;
+            const timeLeftIP = parseInt(lastDripIP) + 24 * 60 * 60 - now;
+
+            if (timeLeftAddress > 0) {
+                const hoursLeft = Math.floor(timeLeftAddress / 3600);
+                const minutesLeft = Math.floor((timeLeftAddress % 3600) / 60);
+                updateStatus(`Address: Wait ${hoursLeft}h ${minutesLeft}m before next drip!`);
+                return;
+            }
+            if (timeLeftIP > 0) {
+                const hoursLeft = Math.floor(timeLeftIP / 3600);
+                const minutesLeft = Math.floor((timeLeftIP % 3600) / 60);
+                updateStatus(`IP: Wait ${hoursLeft}h ${minutesLeft}m before next drip!`);
+                return;
+            }
+
+            const tx = await contract.methods.drip(ipHash).send({ from: accounts[0] });
+            updateStatus(`0.01 ETH sent to your wallet! Tx: <a href="https://sepolia.etherscan.io/tx/${tx.transactionHash}" target="_blank">${tx.transactionHash.slice(0, 10)}...</a>`);
+            captchaVerified = false;
+            document.getElementById("dripBtn").disabled = true;
+            grecaptcha.reset();
+            updateBalance();
+        } catch (error) {
+            console.error("Drip error:", error);
+            updateStatus("Error: " + (error.message || "Transaction failed"));
         }
-    </script>
+    }
+
+    function updateStatus(message) {
+        document.getElementById("status").innerHTML = message;
+    }
+</script>
 </body>
 </html>
